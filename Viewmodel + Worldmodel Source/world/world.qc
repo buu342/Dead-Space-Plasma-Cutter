@@ -40,8 +40,8 @@ $sequence "idle2" "anims\idle2.smd" {
 
 $Sequence "shoot1" {
 	"anims/shoot1.smd"
-	{ event AE_NPC_MUZZLEFLASH 0 "SMG1 MUZZLE" }
 	{ event 3002 0 "" }
+	{ event 5001 0 "1" }
 	fps 30
     snap
 	node "Ready"
@@ -49,8 +49,8 @@ $Sequence "shoot1" {
 
 $Sequence "shoot2" {
 	"anims/shoot2.smd"
-	{ event AE_NPC_MUZZLEFLASH 0 "SMG1 MUZZLE" }
 	{ event 3002 0 "lefthand" }
+	{ event 5001 0 "1" }
 	fps 30
     snap
 	node "Ready"
@@ -121,6 +121,30 @@ $sequence "reload1" "anims\reload1.smd" {
 $sequence "reload2" "anims\reload2.smd" {
 	fps 30
 	"ACT_VM_RELOAD2" 1
+	snap
+	node "Ready"
+	{ event 5004 0 "Weapon_DSpace1_PCutter.Move1" }
+    { event 5004 12 "Weapon_DSpace1_PCutter.Magout" }
+	{ event 5004 22 "Weapon_DSpace1_PCutter.Move2" }
+	{ event 5004 39 "Weapon_DSpace1_PCutter.Magin" }
+	{ event 5004 51 "Weapon_DSpace1_PCutter.Move3" }
+}
+
+$sequence "reload1_idle" "anims\reload1_idle.smd" {
+	fps 30
+	"ACT_VM_IDLE_DEPLOYED_1" 1
+	snap
+	node "Ready"
+	{ event 5004 0 "Weapon_DSpace1_PCutter.Move1" }
+    { event 5004 12 "Weapon_DSpace1_PCutter.Magout" }
+	{ event 5004 22 "Weapon_DSpace1_PCutter.Move2" }
+	{ event 5004 39 "Weapon_DSpace1_PCutter.Magin" }
+	{ event 5004 51 "Weapon_DSpace1_PCutter.Move3" }
+}
+
+$sequence "reload2_idle" "anims\reload2_idle.smd" {
+	fps 30
+	"ACT_VM_IDLE_DEPLOYED_2" 1
 	snap
 	node "Ready"
 	{ event 5004 0 "Weapon_DSpace1_PCutter.Move1" }

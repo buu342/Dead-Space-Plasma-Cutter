@@ -3,13 +3,6 @@
 https://github.com/buu342/GMod-DeadSpacePlasmaCutter
 **************************************************************/
 
-/*
-    Fix thirdperson flashlight flickering in Singleplayer
-    Lerp the laser rotation in third person
-    Finish commenting
-    Idle reload thirdperson
-    Fix Lastlaserpos bug for a single frame
-*/
 
 AddCSLuaFile()
 DEFINE_BASECLASS( "weapon_buu_base2" )
@@ -222,25 +215,12 @@ function SWEP:PrimaryAttack()
             trace.endpos = pos + Vector(1, 1, 1)
             local trline = util.TraceLine(trace)
             
-            -- Create effects
+            -- Create a spark where we shot
             if (IsFirstTimePredicted() || (SERVER && game.SinglePlayer())) then
-            
-                -- Create a spark where we shot
                 local effectdata = EffectData()
                 effectdata:SetOrigin(pos)
                 effectdata:SetNormal(trline.HitNormal)
                 util.Effect("MetalSpark", effectdata)
-                
-                -- Create a muzzleflash
-                if (self.Owner:GetViewEntity() != self.Owner) then
-                    local fx = EffectData()
-                    fx:SetOrigin(self:GetBoneOrientation(self, "Laser2"))
-                    fx:SetEntity(self)
-                    fx:SetStart(self.Owner:GetShootPos())
-                    fx:SetNormal(self.Owner:GetAimVector())
-                    fx:SetAttachment(1)
-                    util.Effect("ChopperMuzzleFlash", fx)
-                end
             end
             
             -- Create laser hitboxes where we hit
@@ -352,8 +332,10 @@ function SWEP:Reload()
     else
         if (self:GetBuu_FireMode() == 0) then
             anim = ACT_VM_IDLE_DEPLOYED_1
+            self:SendWorldmodelAnimation("reload1_idle", 0.25)
         else
             anim = ACT_VM_IDLE_DEPLOYED_2
+            self:SendWorldmodelAnimation("reload2_idle", 0.25)
         end
     end
     self.Weapon:SendWeaponAnim(anim)
@@ -622,19 +604,33 @@ function SWEP:HandleIronsights()
     end
 end
 
+
+/*-----------------------------
+    HandleSprinting
+    Handles sprinting logic
+-----------------------------*/
+
 function SWEP:HandleSprinting()
-    if !self:GetBuu_Ironsights() && self:GetNextPrimaryFire() < CurTime() && self:GetBuu_DS_SwingTimer() == 0 then
-        if self.Owner:KeyDown(IN_SPEED) && !self:GetBuu_Sprinting() && !self:GetBuu_Reloading() && self.Owner:GetVelocity():Length() > self.Owner:GetWalkSpeed() && !self.Owner:KeyDown(IN_DUCK) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD)) then
+    
+    -- If we're not ironsighting or swinging
+    if (!self:GetBuu_Ironsights() && self:GetNextPrimaryFire() < CurTime() && self:GetBuu_DS_SwingTimer() == 0) then
+        
+        -- And we're sprinting
+        if (self.Owner:KeyDown(IN_SPEED) && !self:GetBuu_Sprinting() && !self:GetBuu_Reloading() && self.Owner:GetVelocity():Length() > self.Owner:GetWalkSpeed() && !self.Owner:KeyDown(IN_DUCK) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD))) then
+            
+            -- Play the sprinting animation
             self:SetBuu_Sprinting(true)
-            if self:GetBuu_FireMode() == 0 then
+            if (self:GetBuu_FireMode() == 0) then
                 self:SendWeaponAnim(ACT_VM_HITCENTER)
             else
                 self:SendWeaponAnim(ACT_VM_HITCENTER2)
             end
-        elseif self:GetBuu_Sprinting() && (!self.Owner:KeyDown(IN_SPEED) || !self.Owner:IsOnGround() || self:GetBuu_Reloading() || !self.Owner:KeyDown(IN_FORWARD) || self.Owner:KeyDown(IN_DUCK)) then
+        elseif (self:GetBuu_Sprinting() && (!self.Owner:KeyDown(IN_SPEED) || !self.Owner:IsOnGround() || self:GetBuu_Reloading() || !self.Owner:KeyDown(IN_FORWARD) || self.Owner:KeyDown(IN_DUCK))) then
+            
+            -- Go back to the idle animation
             self:SetBuu_Sprinting(false)
-            if !self:GetBuu_Reloading() then
-                if self:GetBuu_FireMode() == 0 then
+            if (!self:GetBuu_Reloading()) then
+                if (self:GetBuu_FireMode() == 0) then
                     self:SendWeaponAnim(ACT_VM_IDLE_1)
                 else
                     self:SendWeaponAnim(ACT_VM_IDLE_2)
@@ -650,15 +646,19 @@ function SWEP:HandleIdle()
     if (self:GetBuu_GotoIdle() != 0 && self:GetBuu_GotoIdle() < CurTime()) then
         self:SetBuu_GotoIdle(0)
         
-        -- Stop reloading
+        -- If we were reloading
         if (self:GetBuu_Reloading()) then
+        
+            -- If we're ironsighting, go back to aiming animation, otherwise reset the speed
             if (self:GetBuu_Ironsights()) then
-            self.Owner:SetAnimation(PLAYER_ATTACK1)
+                self.Owner:SetAnimation(PLAYER_ATTACK1)
+            else
+                self.Owner:SetWalkSpeed(self.OriginalWalkSpeed)
+                self.Owner:SetRunSpeed(self.OriginalRunSpeed)
             end
+            
+            -- Stop reloading
             self:SetBuu_Reloading(false)
-            self:SetBuu_SpecialState(0)
-            self.Owner:SetWalkSpeed(self.OriginalWalkSpeed)
-            self.Owner:SetRunSpeed(self.OriginalRunSpeed)
         end
     end
 end
@@ -685,7 +685,7 @@ end
 
 function SWEP:DrawWorldModel()
 
-    // If we're not being used, then draw the worldmodel properly
+    // If we're not being used by a player, then draw the worldmodel properly
     if (self.Owner == nil || !IsValid(self.Owner) || self.Owner:GetActiveWeapon() != self) then
         self:DrawModel()
         return
@@ -695,12 +695,12 @@ function SWEP:DrawWorldModel()
         self.WorldModelAnim = 0
         self.WorldModelAnimTime = 0
     end
-    
-    if (self.WorldModelAnim < 1 && self.WorldModelAnim != 1) then
+    if (self.WorldModelAnim < 1) then
         self.WorldModelAnim = self.WorldModelAnim + (FrameTime())/self.WorldModelAnimTime
         if (self.WorldModelAnim > 1) then
             self.WorldModelAnim = 1
         end
+
     end
     
     if (self.WorldModelEnt == nil) then
@@ -717,7 +717,8 @@ function SWEP:DrawWorldModel()
     if (self:GetBuu_Ironsights() && !self:GetBuu_Reloading()) then
         for i=1, 3 do
             local pointpos = Vector(0,0,0)
-            local pos, ang = self:GetBoneOrientation(self.WorldModelEnt, bonesto[i])
+            local pos, ang 
+            pos, ang = self:GetBoneOrientation(self.WorldModelEnt, bonesto[i])
             if pos == nil || ang == nil then return end
             ang:RotateAroundAxis(ang:Up(), -90)
             ang:RotateAroundAxis(ang:Right(), 0)
@@ -736,6 +737,8 @@ function SWEP:DrawWorldModel()
                 pointpos = trace.HitPos
                 if (self:GetNextPrimaryFire() > CurTime() && self:GetBuu_StateTimer() < CurTime()) then
                     pointpos = Lerp(1-(self:GetNextPrimaryFire()-CurTime()), trace.HitPos, self:CalcHitPos(i))
+                elseif self:GetBuu_StateTimer() > CurTime() then
+                    pointpos = LerpVector(1-(self:GetBuu_StateTimer()-CurTime())/0.3, self:CalcHitPos(i, (self:GetBuu_FireMode()+1)%2), self:CalcHitPos(i))
                 else
                     pointpos = self:CalcHitPos(i)
                 end
@@ -760,26 +763,30 @@ function SWEP:SendWorldmodelAnimation(anim, speed)
         net.Broadcast()
     end
     
-    if (self.WorldModelEnt != nil && IsFirstTimePredicted()) then
-        self.WorldModelEnt:SetSequence(self.WorldModelEnt:LookupSequence(anim))
+    if (self.WorldModelEnt != nil) then
+        self.WorldModelEnt:ResetSequence(self.WorldModelEnt:LookupSequence(anim))
         self.WorldModelAnim = 0
         self.WorldModelAnimTime = 1/speed
     end
 end
 
+function SWEP:MuzzleEffect(wep)
+    local fx = EffectData()
+    if (!IsValid(wep)) then return end
+    fx:SetOrigin(wep:GetAttachment(wep:LookupAttachment("1")).Pos)
+    fx:SetEntity(wep)
+    fx:SetStart(wep.Owner:GetShootPos())
+    fx:SetNormal(wep.Owner:GetAimVector())
+    fx:SetAttachment(1)
+    fx:SetScale(10)
+    util.Effect("cball_bounce", fx)
+    util.Effect("ChopperMuzzleFlash", fx)    
+end
+
 function SWEP:FireAnimationEvent(pos,ang,event)
     if (event == 5001 || event == 21 || event == 22) then 
         if !IsValid(self.Owner) then return end
-        local fx = EffectData()
-        local vm = self.Owner:GetViewModel()
-        fx:SetOrigin(vm:GetAttachment(vm:LookupAttachment("1")).Pos)
-        fx:SetEntity(vm)
-        fx:SetStart(self.Owner:GetShootPos())
-        fx:SetNormal(self.Owner:GetAimVector())
-        fx:SetAttachment(1)
-        fx:SetScale(10)
-        util.Effect("cball_bounce", fx)
-        util.Effect("ChopperMuzzleFlash", fx)
+        self:MuzzleEffect(self.Owner:GetViewModel())
     end    
     return true
 end
@@ -866,6 +873,10 @@ function SWEP:ViewModelDrawn(vm)
             vm.FlashLight:Remove()
             vm.FlashLight = nil
         end
+        for i=1, 3 do
+            self.lastlaserposition[i] = -1
+            self.pointpos[i] = -1
+        end
         return
     end
     
@@ -920,12 +931,14 @@ function SWEP:ViewModelDrawn(vm)
                     final_hitpos = bonepos
                 end
                 
-                render.SetMaterial(LaserBeam)
-                render.DrawBeam(bonepos + bonedir, final_hitpos, 0.5, 0, 0.99, Color(255,255,255))
-                render.DrawBeam(final_hitpos, self.lastlaserposition[i], 5, 0, 1, Color(255,255,255))
-                render.SetMaterial(LaserPoint)
-                render.SetMaterial(LaserPoint)
-                render.DrawSprite(final_hitpos, 5, 5, Color(255,255,255))
+                if (self.lastlaserposition[i] != -1) then
+                    render.SetMaterial(LaserBeam)
+                    render.DrawBeam(bonepos + bonedir, final_hitpos, 0.5, 0, 0.99, Color(255,255,255))
+                    render.DrawBeam(final_hitpos, self.lastlaserposition[i], 5, 0, 1, Color(255,255,255))
+                    render.SetMaterial(LaserPoint)
+                    render.SetMaterial(LaserPoint)
+                    render.DrawSprite(final_hitpos, 5, 5, Color(255,255,255))
+                end
                 self.lastlaserposition[i] = final_hitpos
             end
         end
@@ -955,7 +968,7 @@ function SWEP:ViewModelDrawn(vm)
     self:RenderAmmoCount(self, vm)
 end
 
-function SWEP:CalcHitPos(i)
+function SWEP:CalcHitPos(i, mode)
     local tr = {
         start = self.Owner:GetShootPos(),
         endpos = self.Owner:GetShootPos() + self.Owner:GetAimVector()*32768,
@@ -967,7 +980,7 @@ function SWEP:CalcHitPos(i)
     local up = 0
     local distance = self.Owner:GetShootPos():Distance(util.TraceLine(tr).HitPos)
     
-    if (self:GetBuu_FireMode() == 1) then
+    if (mode == 1 || (mode == nil && self:GetBuu_FireMode() == 1)) then
         if (i == 1) then
             right = 4
         elseif (i == 3) then
@@ -1000,8 +1013,10 @@ function SWEP:Cleanup()
             self.Owner:GetViewModel().FlashLight:Remove()
             self.Owner:GetViewModel().FlashLight = nil
         end
-        self.Owner:SetWalkSpeed(self.OriginalWalkSpeed)
-        self.Owner:SetRunSpeed(self.OriginalRunSpeed)
+        if (self.OriginalWalkSpeed != nil) then
+            self.Owner:SetWalkSpeed(self.OriginalWalkSpeed)
+            self.Owner:SetRunSpeed(self.OriginalRunSpeed)
+        end
     end
 end
 
@@ -1029,7 +1044,13 @@ end
 
 local function Buu_DS_PlasmaLight()
     local wep = net.ReadEntity()
-    if (wep.Owner == LocalPlayer() && !game.SinglePlayer()) then return end
+    if (wep.Owner == LocalPlayer() && !game.SinglePlayer()) then 
+        if (LocalPlayer():ShouldDrawLocalPlayer()) then
+        wep:MuzzleEffect(wep)
+        end
+        return 
+    end
+    
     local dlight = DynamicLight(wep.Owner:EntIndex())
     if (dlight) then
         dlight.pos = wep.Owner:GetShootPos()
@@ -1041,6 +1062,7 @@ local function Buu_DS_PlasmaLight()
         dlight.Size = 256
         dlight.DieTime = CurTime() + 1
     end
+    wep:MuzzleEffect(wep)
 end
 net.Receive("Buu_DS_PlasmaLight", Buu_DS_PlasmaLight)
 
@@ -1050,9 +1072,9 @@ local function Buu_DS_BroadcastAnim()
     local speed = net.ReadFloat()
     if (wep.Owner == LocalPlayer() && !game.SinglePlayer()) then return end
     if (wep.WorldModelEnt == nil) then return end
-    wep.WorldModelEnt:SetSequence(wep.WorldModelEnt:LookupSequence(anim))
     wep.WorldModelAnim = 0
     wep.WorldModelAnimTime = 1/speed
+    wep.WorldModelEnt:ResetSequence(wep.WorldModelEnt:LookupSequence(anim))
 end
 net.Receive("Buu_DS_BroadcastAnim", Buu_DS_BroadcastAnim)
 
@@ -1063,6 +1085,7 @@ local function Buu_DS_NetworkClip1()
     wep:SetClip1(clip)
 end
 net.Receive("Buu_DS_NetworkClip1", Buu_DS_NetworkClip1)
+
 
 /*-----------------------------
     Buu_PlasmaCutter_ThirdPersonRendering
@@ -1086,38 +1109,37 @@ local function Buu_PlasmaCutter_ThirdPersonRendering()
             
             -- If we're using the flashlight
             if (wep:GetBuu_Ironsights() && !wep:GetBuu_Reloading()) then
-                local pos, ang = wep:GetBoneOrientation(wep, "Laser1")
+                local pos, ang = wep:GetBoneOrientation(wep.WorldModelEnt, "Laser2")
                 
                 -- If the positions are invalid, stop
                 if (pos == nil || ang == nil) then return end
-                
                 ang:RotateAroundAxis(ang:Up(), -90)
                 ang:RotateAroundAxis(ang:Right(), 0)
                 ang:RotateAroundAxis(ang:Forward(), 0)
                 
                 -- Create the flashlight if it doesn't exist yet
-                if (v.FlashlightEntBuu == nil) then
+                if (v.FlashlightEntPC == nil) then
                     local lamp = ProjectedTexture()
-                    v.FlashlightEntBuu = lamp
-                    v.FlashlightEntBuu:SetTexture("effects/flashlight001")
-                    v.FlashlightEntBuu:SetFarZ(712)
-                    v.FlashlightEntBuu:SetFOV(50)
+                    v.FlashlightEntPC = lamp
+                    v.FlashlightEntPC:SetTexture("effects/flashlight001")
+                    v.FlashlightEntPC:SetFarZ(712)
+                    v.FlashlightEntPC:SetFOV(50)
                 end
                 
                 -- Update its position and angles
-                v.FlashlightEntBuu:SetPos(pos) 
-                v.FlashlightEntBuu:SetAngles(ang)
-                v.FlashlightEntBuu:Update()
-            elseif (v.FlashlightEntBuu != nil) then
-                v.FlashlightEntBuu:Remove()
-                v.FlashlightEntBuu = nil
+                v.FlashlightEntPC:SetPos(pos) 
+                v.FlashlightEntPC:SetAngles(ang)
+                v.FlashlightEntPC:Update()
+            elseif (v.FlashlightEntPC != nil) then
+                v.FlashlightEntPC:Remove()
+                v.FlashlightEntPC = nil       
             end
         end
         
         -- If we're not in thirdperson, remove the flashlight entity
-        if (!(wep.IsBuuBase && (v != LocalPlayer() || v:ShouldDrawLocalPlayer())) && v.FlashlightEntBuu != nil) then
-            v.FlashlightEntBuu:Remove()
-            v.FlashlightEntBuu = nil
+        if (IsValid(wep) && !(wep:GetClass() == "weapon_buu_ds1_plasmacutter" && (v != LocalPlayer() || v:ShouldDrawLocalPlayer())) && v.FlashlightEntPC != nil) then
+            v.FlashlightEntPC:Remove()
+            v.FlashlightEntPC = nil
         end
     end
 end
