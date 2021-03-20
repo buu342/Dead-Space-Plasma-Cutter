@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$basetexture" "Vgui/entities/weapon_buu_ds1_plasmacutter"
+	"$nolod" 1
+	"$vertexalpha" 1
+	"$vertexcolor" 1
+}

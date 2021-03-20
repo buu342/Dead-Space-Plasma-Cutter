@@ -1,0 +1,7 @@
+"UnlitGeneric"
+{
+	"$basetexture" "models/deadspace1/weapons/generic/glow"
+	"$additive" 1
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+}
