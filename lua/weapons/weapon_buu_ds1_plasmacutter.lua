@@ -1089,7 +1089,7 @@ if (CLIENT) then
                     -- Render the laser, if we have a valid old position
                     if (self.lastlaserposition[i] != -1) then
                         render.SetMaterial(LaserBeam)
-                        render.DrawBeam(bonepos + bonedir, final_hitpos, 0.5, 0, 0.99, Color(255,255,255))
+                        render.DrawBeam(bonepos + boneang, final_hitpos, 0.5, 0, 0.99, Color(255,255,255))
                         render.DrawBeam(final_hitpos, self.lastlaserposition[i], 5, 0, 1, Color(255,255,255))
                         render.SetMaterial(LaserPoint)
                         render.SetMaterial(LaserPoint)
