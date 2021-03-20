@@ -1277,7 +1277,7 @@ if SERVER then
     function Buu_PlasmaCutter_DisableFlashlight(ply, tostate)
     
         -- If we're holding the plasma cutter, disable flashlight
-        if (ply:GetActiveWeapon() != nil && ply:GetActiveWeapon():GetClass() == "weapon_buu_ds1_plasmacutter") then
+        if (ply:GetActiveWeapon() != nil && IsValid(ply:GetActiveWeapon()) && ply:GetActiveWeapon():GetClass() == "weapon_buu_ds1_plasmacutter") then
             return !tostate
         end
     end
