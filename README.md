@@ -1,4 +1,4 @@
-# Dead Space 1 Plasma Cutter
+# Dead Space 1 Plasma Cutter SWEP
 ![gif](https://steamuserimages-a.akamaihd.net/ugc/1746807301516825197/BE2A7E7B089B14B647CD9AEAA9217A06138621E8/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true)
 
 **Requires [Buu342s Weapon Base 2](https://github.com/buu342/GMod-BuuBaseRedone) to work.**
