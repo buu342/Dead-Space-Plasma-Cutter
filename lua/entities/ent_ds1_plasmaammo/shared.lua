@@ -38,18 +38,23 @@ if CLIENT then
         render.SetMaterial(LightPoint)
         render.DrawSprite(lightpos, 5, 5, Color(255,255,255))
         
-        -- 
+        -- Create a trace to the player
         local tr = util.TraceLine({
             start = self:GetPos()+Vector(0,0,10),
-            endpos = LocalPlayer():EyePos(),
+            endpos = LocalPlayer():GetPos()+Vector(0,0,50),
             filter = self
         })
-        if LocalPlayer():GetPos():Distance(self:GetPos()) < 96 && tr.Entity == LocalPlayer() then
+        
+        -- If the player is close enough to the plasma energy
+        if (LocalPlayer():GetPos():Distance(self:GetPos()) < 96 && tr.Entity && LocalPlayer()) then
+        
+            -- Allow picking up and play a sound
             if self.CanBePickedUp == false then
                 self.CanBePickedUp = true
                 self:EmitSound("deadspace1/weapons/items/near.wav")
             end
             
+            -- Get the entity's Position
             local pos = self:GetPos()
             local ang = Angle(0, LocalPlayer():EyeAngles().y, 0)
             ang:RotateAroundAxis(ang:Up(), -90)
@@ -57,6 +62,7 @@ if CLIENT then
             ang:RotateAroundAxis(ang:Forward(), 90)
             pos = pos + ang:Forward() * -30 + ang:Right() * -65 + ang:Up() * 5
             
+            -- Draw the ammo info
             cam.Start3D2D(pos, ang, 0.1)
                 local TexturedQuadStructure = {
                     texture = surface.GetTextureID(Icon),
