@@ -1138,6 +1138,7 @@ if (CLIENT) then
         local wep = net.ReadEntity()
         
         -- If we're not in singleplayer, and we received this net message
+        if (!IsValid(wep)) then return end
         if (wep.Owner == LocalPlayer() && !game.SinglePlayer()) then 
         
             -- Render the muzzle if in third person
@@ -1177,7 +1178,7 @@ if (CLIENT) then
         local speed = net.ReadFloat()
         
         -- If we're not ourselves, and there's a valud worldmodel
-        if (wep.Owner == LocalPlayer() && !game.SinglePlayer()) then return end
+        if (!IsValid(wep) || wep.Owner == LocalPlayer() && !game.SinglePlayer()) then return end
         if (wep.WorldModelEnt == nil) then return end
         
         -- Set the variables from what we read
@@ -1195,7 +1196,7 @@ if (CLIENT) then
     local function Buu_DS_NetworkClip1()
         local wep = net.ReadEntity()
         local clip = net.ReadInt(32)
-        if (wep.Owner == LocalPlayer()) then return end
+        if (!IsValid(wep) || wep.Owner == LocalPlayer()) then return end
         wep:SetClip1(clip)
     end
     net.Receive("Buu_DS_NetworkClip1", Buu_DS_NetworkClip1)
